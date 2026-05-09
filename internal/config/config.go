@@ -35,6 +35,10 @@ type AdapterConfig struct {
 	BaseURL string `yaml:"base_url"`
 	APIKey  string `yaml:"api_key"`
 	Model   string `yaml:"model" validate:"required"`
+	// Optional per-token pricing in USD per million tokens. When set, overrides
+	// built-in defaults for EstimateCost. Matches Anthropic's published pricing format.
+	CostPerMillionInputTokens  float64 `yaml:"cost_per_million_input_tokens"`
+	CostPerMillionOutputTokens float64 `yaml:"cost_per_million_output_tokens"`
 }
 
 func Load(path string) (*Config, error) {

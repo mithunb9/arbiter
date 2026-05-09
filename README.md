@@ -5,7 +5,7 @@ A self-hosted, LLM proxy to route requests across local and cloud models based o
 ```
 curl http://localhost:9099/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model": "balanced", "messages": [{"role": "user", "content": "Hello"}]}'
+  -d '{"model": "fast", "messages": [{"role": "user", "content": "Hello"}]}'
 ```
 
 ## Why Arbiter
@@ -35,7 +35,7 @@ Set your LLM client's base URL to `http://localhost:9099` and use the different 
 
 ```
 base_url: http://localhost:9099
-model: balanced
+model: fast
 ```
 
 Designed to work with Cursor, Zed, Zenith, LangChain, or any OpenAI-compatible client.
@@ -77,6 +77,11 @@ adapters:
     type: anthropic
     api_key: ${ANTHROPIC_API_KEY}
     model: claude-sonnet-4-6
+
+  - name: claude-opus
+    type: anthropic
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-opus-4-7
 ```
 
 ### API keys
@@ -97,7 +102,7 @@ OpenAI-compatible chat endpoint. Pass a tier name as the `model` field.
 
 ```json
 {
-  "model": "balanced",
+  "model": "fast",
   "messages": [{ "role": "user", "content": "Explain recursion" }],
   "stream": true
 }
@@ -121,7 +126,7 @@ Every response from Arbiter includes routing metadata:
 | -------------------- | ---------------- | ---------------------------------------- |
 | `X-Arbiter-Adapter`  | `ollama`         | Which adapter handled the request        |
 | `X-Arbiter-Model`    | `ollama-mistral` | Which model handled the request          |
-| `X-Arbiter-Tier`     | `balanced`       | Which tier was requested                 |
+| `X-Arbiter-Tier`     | `fast`           | Which tier was requested                 |
 | `X-Arbiter-Fallback` | `true`           | Only present when fallback was triggered |
 
 These headers are available on both streaming and non-streaming responses.
@@ -169,7 +174,7 @@ docker run -d \
 | Type            | Description                                           | Status |
 | --------------- | ----------------------------------------------------- | ------ |
 | `ollama`        | Local Ollama instance                                 | v0.1   |
-| `anthropic`     | Claude API (all models)                               | v0.1   |
+| `anthropic`     | Claude API via official SDK (all models)              | v0.1   |
 | `openai_compat` | Groq, Together, LM Studio, any OpenAI-compat endpoint | v0.2   |
 
 ## Roadmap
