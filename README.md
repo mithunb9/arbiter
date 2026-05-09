@@ -179,7 +179,7 @@ docker run -d \
 
 ## Roadmap
 
-- **v0.1** — OpenAI-compat proxy, Anthropic + Ollama adapters, tier routing, health endpoints, Docker
+- **v0.1** — OpenAI-compat proxy, Anthropic + Ollama adapters, tier routing, health endpoints, Docker (current)
 - **v0.2** — OpenAI-compat adapter, SQLite cost persistence, health-check-based fallback
 - **v0.3** — Budget cap enforcement, Prometheus `/metrics`, cost + latency response headers
 - **v0.4** — Investigate complexity classifier (heuristic-first)
