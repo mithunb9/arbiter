@@ -1,20 +1,15 @@
-# Arbiter configuration reference
-# Copy this file to config.yaml and edit to match your setup.
-# API keys should always be set via environment variables, never hardcoded.
-
 server:
   port: 9099
 
-cost:
-  # In-memory only in v0.1 — resets on container restart.
-  # Set to 0 to disable budget enforcement.
-  monthly_budget_usd: 20.00
+cost: 
+  monthly_budget_usd: 20.00 # No budget enforcement if set to 0. Future integration planned for v0.2 and beyond.
 
 # ---------------------------------------------------------------------------
 # Tiers
 # ---------------------------------------------------------------------------
 # A tier is a named group of adapters with an optional fallback chain.
-# The tier name is what clients pass as the "model" field.
+# The tier name is what clients pass as the "model" field. This is simply
+# an opioniated naming system and anything can be used in this place.
 #
 # Example: set `model: fast` in Cursor, Zed, or any OpenAI-compatible client.
 #
@@ -22,18 +17,19 @@ cost:
 # If fallback: false (default), the first adapter is used exclusively.
 # ---------------------------------------------------------------------------
 
+# Examples configs
 tiers:
-  # Fast — local first, falls back to cloud if Ollama is unavailable.
+  # Fast models that actually have fallback
+  # Local (Unavailable) -> Claude API
   - name: fast
     adapters: [ollama-mistral, claude-haiku]
     fallback: true
 
-  # Cloud only — cost-aware, haiku first then sonnet.
+  # Cloud models without fallback. In this case sonnet is never used.
   - name: cloud
     adapters: [claude-haiku, claude-sonnet]
-    fallback: true
 
-  # Best available — opus only, no fallback.
+  # Example of just one model configured.
   - name: premium
     adapters: [claude-opus]
 
@@ -52,7 +48,6 @@ adapters:
   # --- Ollama (local) -------------------------------------------------------
   # Use host.docker.internal to reach Ollama running on your host machine.
   # Do NOT use localhost — inside a container, localhost refers to the container itself.
-  #
   # If Ollama is running on a remote machine, use its IP or hostname instead.
 
   - name: ollama-mistral
@@ -61,18 +56,18 @@ adapters:
     model: mistral
 
   # Add as many Ollama adapters as you have models pulled locally:
-  # - name: ollama-llama
-  #   type: ollama
-  #   base_url: http://host.docker.internal:11434
-  #   model: llama3.2
+  - name: ollama-llama
+    type: ollama
+    base_url: http://host.docker.internal:11434
+    model: llama3.2
 
   # --- Anthropic ------------------------------------------------------------
   # Set ANTHROPIC_API_KEY in your .env file.
   # All Claude models are supported — use the exact model string from Anthropic's docs.
+  # Internally the Anthropic SDK is used.
 
-  # cost_per_million_input_tokens and cost_per_million_output_tokens are optional.
+  # cost_per_million_input_tokens and cost_per_million_output_tokens are optional, set in USD.
   # When set, they override the built-in defaults used by EstimateCost.
-  # Values are in USD per million tokens — the same unit Anthropic publishes.
   # Update these whenever Anthropic changes pricing: https://www.anthropic.com/pricing
 
   - name: claude-haiku
