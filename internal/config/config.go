@@ -11,8 +11,8 @@ import (
 type Config struct {
 	Server   ServerConfig    `yaml:"server" validate:"required"`
 	Cost     CostConfig      `yaml:"cost"`
-	Tiers    []TierConfig    `yaml:"tiers" validate:"required,min=1"`
-	Adapters []AdapterConfig `yaml:"adapters" validate:"required,min=1"`
+	Tiers    []TierConfig    `yaml:"tiers" validate:"required,min=1,dive"`
+	Adapters []AdapterConfig `yaml:"adapters" validate:"required,min=1,dive"`
 }
 
 type ServerConfig struct {
