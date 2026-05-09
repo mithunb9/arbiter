@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
 	"github.com/mithunb9/arbiter/internal/adapter"
@@ -30,6 +31,8 @@ func main() {
 		}
 		os.Exit(0)
 	}
+
+	_ = godotenv.Load()
 
 	configPath := flag.String("config", "/app/config.yaml", "path to config.yaml")
 	flag.Parse()
