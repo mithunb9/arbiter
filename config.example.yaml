@@ -16,19 +16,15 @@ cost:
 # A tier is a named group of adapters with an optional fallback chain.
 # The tier name is what clients pass as the "model" field.
 #
-# Example: set `model: balanced` in Cursor, Zed, or any OpenAI-compatible client.
+# Example: set `model: fast` in Cursor, Zed, or any OpenAI-compatible client.
 #
 # If fallback: true, Arbiter tries adapters in order until one succeeds.
 # If fallback: false (default), the first adapter is used exclusively.
 # ---------------------------------------------------------------------------
 
 tiers:
-  # Fastest available — local model only, no fallback.
-  - name: instant
-    adapters: [ollama-mistral]
-
-  # Local first, falls back to cloud if Ollama is unavailable.
-  - name: balanced
+  # Fast — local first, falls back to cloud if Ollama is unavailable.
+  - name: fast
     adapters: [ollama-mistral, claude-haiku]
     fallback: true
 
@@ -37,9 +33,9 @@ tiers:
     adapters: [claude-haiku, claude-sonnet]
     fallback: true
 
-  # Best available — sonnet only, no fallback.
+  # Best available — opus only, no fallback.
   - name: premium
-    adapters: [claude-sonnet]
+    adapters: [claude-opus]
 
 # ---------------------------------------------------------------------------
 # Adapters
@@ -64,37 +60,41 @@ adapters:
     base_url: http://host.docker.internal:11434
     model: mistral
 
-  - name: ollama-llama
-    type: ollama
-    base_url: http://host.docker.internal:11434
-    model: llama3.2
-
   # Add as many Ollama adapters as you have models pulled locally:
-  # - name: ollama-codellama
+  # - name: ollama-llama
   #   type: ollama
   #   base_url: http://host.docker.internal:11434
-  #   model: codellama
+  #   model: llama3.2
 
   # --- Anthropic ------------------------------------------------------------
   # Set ANTHROPIC_API_KEY in your .env file.
   # All Claude models are supported — use the exact model string from Anthropic's docs.
 
+  # cost_per_million_input_tokens and cost_per_million_output_tokens are optional.
+  # When set, they override the built-in defaults used by EstimateCost.
+  # Values are in USD per million tokens — the same unit Anthropic publishes.
+  # Update these whenever Anthropic changes pricing: https://www.anthropic.com/pricing
+
   - name: claude-haiku
     type: anthropic
     api_key: ${ANTHROPIC_API_KEY}
     model: claude-haiku-4-5
+    # cost_per_million_input_tokens: 0.80
+    # cost_per_million_output_tokens: 4.00
 
   - name: claude-sonnet
     type: anthropic
     api_key: ${ANTHROPIC_API_KEY}
     model: claude-sonnet-4-6
+    # cost_per_million_input_tokens: 3.00
+    # cost_per_million_output_tokens: 15.00
 
-  # You can define adapters for models you don't use yet — they won't be
-  # called unless referenced by a tier.
-  # - name: claude-opus
-  #   type: anthropic
-  #   api_key: ${ANTHROPIC_API_KEY}
-  #   model: claude-opus-4-6
+  - name: claude-opus
+    type: anthropic
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-opus-4-7
+    # cost_per_million_input_tokens: 15.00
+    # cost_per_million_output_tokens: 75.00
 
   # --- OpenAI-compatible (v0.2+) -------------------------------------------
   # Groq, Together AI, LM Studio, or any OpenAI-compatible endpoint.
