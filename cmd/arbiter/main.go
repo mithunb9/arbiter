@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,10 +11,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 
+	"github.com/mithunb9/arbiter/internal/adapter"
 	"github.com/mithunb9/arbiter/internal/config"
 	"github.com/mithunb9/arbiter/internal/health"
+	"github.com/mithunb9/arbiter/internal/proxy"
+	"github.com/mithunb9/arbiter/internal/router"
 )
 
 func main() {
@@ -27,6 +32,11 @@ func main() {
 		os.Exit(0)
 	}
 
+	_ = godotenv.Load()
+
+	configPath := flag.String("config", "/app/config.yaml", "path to config.yaml")
+	flag.Parse()
+
 	logger, err := zap.NewProduction()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to init logger: %v\n", err)
@@ -34,22 +44,30 @@ func main() {
 	}
 	defer func() { _ = logger.Sync() }()
 
-	cfg, err := config.Load("/app/config.yaml")
+	cfg, err := config.Load(*configPath)
 	if err != nil {
 		logger.Fatal("failed to load config", zap.Error(err))
 	}
 
+	adapters, err := buildAdapters(cfg, logger)
+	if err != nil {
+		logger.Fatal("failed to init adapters", zap.Error(err))
+	}
+
+	ar := router.New(cfg.Tiers, adapters, logger)
+	proxyHandler := proxy.New(ar, logger)
+
+	mux := gin.New()
+	mux.Use(gin.Recovery())
+
+	health.RegisterRoutes(mux)
+	proxy.RegisterRoutes(mux, proxyHandler)
+
 	logger.Info("arbiter starting", zap.Int("port", cfg.Server.Port))
-
-	router := gin.New()
-	router.Use(gin.Recovery())
-
-	health.RegisterRoutes(router)
-	// TODO: proxy.RegisterRoutes(router, arbiterRouter)
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler: router,
+		Handler: mux,
 	}
 
 	go func() {
@@ -68,4 +86,27 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("shutdown error", zap.Error(err))
 	}
+}
+
+func buildAdapters(cfg *config.Config, logger *zap.Logger) (map[string]adapter.Adapter, error) {
+	adapters := make(map[string]adapter.Adapter, len(cfg.Adapters))
+	for _, ac := range cfg.Adapters {
+		var a adapter.Adapter
+		var err error
+		switch ac.Type {
+		case "anthropic":
+			a, err = adapter.NewAnthropicAdapter(ac.Name, ac.APIKey, ac.Model,
+				ac.CostPerMillionInputTokens, ac.CostPerMillionOutputTokens)
+		case "ollama":
+			a, err = adapter.NewOllamaAdapter(ac.Name, ac.BaseURL, ac.Model)
+		default:
+			return nil, fmt.Errorf("unknown adapter type %q for adapter %q", ac.Type, ac.Name)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("adapter %q: %w", ac.Name, err)
+		}
+		logger.Info("registered adapter", zap.String("name", ac.Name), zap.String("type", ac.Type))
+		adapters[ac.Name] = a
+	}
+	return adapters, nil
 }
