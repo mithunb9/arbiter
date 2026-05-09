@@ -1,0 +1,20 @@
+services:
+  arbiter:
+    # For local development, replace image with:
+    # build: .
+    image: ghcr.io/mithunb9/arbiter:latest
+    ports:
+      - "9099:9099"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      # Uncomment as needed (v0.2+):
+      # - OPENAI_API_KEY=${OPENAI_API_KEY}
+      # - GROQ_API_KEY=${GROQ_API_KEY}
+    healthcheck:
+      test: ["CMD", "/app/arbiter", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped

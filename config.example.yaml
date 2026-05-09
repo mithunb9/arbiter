@@ -1,0 +1,112 @@
+# Arbiter configuration reference
+# Copy this file to config.yaml and edit to match your setup.
+# API keys should always be set via environment variables, never hardcoded.
+
+server:
+  port: 9099
+
+cost:
+  # In-memory only in v0.1 — resets on container restart.
+  # Set to 0 to disable budget enforcement.
+  monthly_budget_usd: 20.00
+
+# ---------------------------------------------------------------------------
+# Tiers
+# ---------------------------------------------------------------------------
+# A tier is a named group of adapters with an optional fallback chain.
+# The tier name is what clients pass as the "model" field.
+#
+# Example: set `model: balanced` in Cursor, Zed, or any OpenAI-compatible client.
+#
+# If fallback: true, Arbiter tries adapters in order until one succeeds.
+# If fallback: false (default), the first adapter is used exclusively.
+# ---------------------------------------------------------------------------
+
+tiers:
+  # Fastest available — local model only, no fallback.
+  - name: instant
+    adapters: [ollama-mistral]
+
+  # Local first, falls back to cloud if Ollama is unavailable.
+  - name: balanced
+    adapters: [ollama-mistral, claude-haiku]
+    fallback: true
+
+  # Cloud only — cost-aware, haiku first then sonnet.
+  - name: cloud
+    adapters: [claude-haiku, claude-sonnet]
+    fallback: true
+
+  # Best available — sonnet only, no fallback.
+  - name: premium
+    adapters: [claude-sonnet]
+
+# ---------------------------------------------------------------------------
+# Adapters
+# ---------------------------------------------------------------------------
+# An adapter is a named connection to a specific model on a specific provider.
+# Name is the identity — you can define multiple adapters of the same type
+# with different names, models, or base URLs.
+#
+# Supported types (v0.1): ollama, anthropic
+# Coming in v0.2: openai_compat (Groq, Together, LM Studio, etc.)
+# ---------------------------------------------------------------------------
+
+adapters:
+  # --- Ollama (local) -------------------------------------------------------
+  # Use host.docker.internal to reach Ollama running on your host machine.
+  # Do NOT use localhost — inside a container, localhost refers to the container itself.
+  #
+  # If Ollama is running on a remote machine, use its IP or hostname instead.
+
+  - name: ollama-mistral
+    type: ollama
+    base_url: http://host.docker.internal:11434
+    model: mistral
+
+  - name: ollama-llama
+    type: ollama
+    base_url: http://host.docker.internal:11434
+    model: llama3.2
+
+  # Add as many Ollama adapters as you have models pulled locally:
+  # - name: ollama-codellama
+  #   type: ollama
+  #   base_url: http://host.docker.internal:11434
+  #   model: codellama
+
+  # --- Anthropic ------------------------------------------------------------
+  # Set ANTHROPIC_API_KEY in your .env file.
+  # All Claude models are supported — use the exact model string from Anthropic's docs.
+
+  - name: claude-haiku
+    type: anthropic
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-haiku-4-5
+
+  - name: claude-sonnet
+    type: anthropic
+    api_key: ${ANTHROPIC_API_KEY}
+    model: claude-sonnet-4-6
+
+  # You can define adapters for models you don't use yet — they won't be
+  # called unless referenced by a tier.
+  # - name: claude-opus
+  #   type: anthropic
+  #   api_key: ${ANTHROPIC_API_KEY}
+  #   model: claude-opus-4-6
+
+  # --- OpenAI-compatible (v0.2+) -------------------------------------------
+  # Groq, Together AI, LM Studio, or any OpenAI-compatible endpoint.
+  # Uncomment when OpenAICompatAdapter ships in v0.2.
+  #
+  # - name: groq-llama
+  #   type: openai_compat
+  #   base_url: https://api.groq.com/openai/v1
+  #   api_key: ${GROQ_API_KEY}
+  #   model: llama-3.1-8b-instant
+  #
+  # - name: lmstudio-local
+  #   type: openai_compat
+  #   base_url: http://host.docker.internal:1234/v1
+  #   model: local-model
