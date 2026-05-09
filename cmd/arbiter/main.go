@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -30,6 +31,9 @@ func main() {
 		os.Exit(0)
 	}
 
+	configPath := flag.String("config", "/app/config.yaml", "path to config.yaml")
+	flag.Parse()
+
 	logger, err := zap.NewProduction()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to init logger: %v\n", err)
@@ -37,7 +41,7 @@ func main() {
 	}
 	defer func() { _ = logger.Sync() }()
 
-	cfg, err := config.Load("/app/config.yaml")
+	cfg, err := config.Load(*configPath)
 	if err != nil {
 		logger.Fatal("failed to load config", zap.Error(err))
 	}
